@@ -64,3 +64,10 @@ export interface WeatherLocation {
   export interface WeatherSearchForm {
     location: string;
   }
+
+  export interface WeatherDisplayProps {
+    weather: WeatherResponse;
+    units?: 'metric' | 'imperial';
+    onUnitToggle?: () => void;
+    isLoading?: boolean;
+  }
