@@ -144,11 +144,10 @@ export type WeatherErrorResponse = {
 // Component Props Types
 export interface WeatherDisplayProps {
   weather: WeatherResponse;
-  forecast?: ForecastResponse;
   units?: 'metric' | 'imperial';
   onUnitToggle?: () => void;
   isLoading?: boolean;
-  error?: string | null;
+  className?: string;
 }
 
 export interface WeatherSearchProps {

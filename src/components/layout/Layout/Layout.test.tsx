@@ -1,18 +1,23 @@
 // src/components/layout/Layout/Layout.test.tsx
-
-import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Layout } from './Layout';
-import { WeatherService } from '../../../services/weatherService';
 
-// Mock the WeatherService
-vi.mock('../../../services/weatherService', () => ({
-  WeatherService: {
+// Move imports after mock definition
+vi.mock('@/services/weatherService', () => ({
+  weatherService: {
     getCurrentWeather: vi.fn(),
-    isValidLocation: vi.fn().mockImplementation(() => true),
+    getForecast: vi.fn(),
   },
+  WeatherService: {
+    isValidLocation: vi.fn().mockReturnValue(true),
+    getCurrentLocation: vi.fn(),
+  }
 }));
+
+// Import after mock
+import { weatherService, WeatherService } from '@/services/weatherService';
 
 const mockWeatherData = {
   location: {
@@ -63,37 +68,63 @@ describe('Layout', () => {
 
   it('renders the search form', () => {
     render(<Layout />);
-    expect(screen.getByPlaceholderText(/enter city or location/i)).toBeInTheDocument();
+    expect(screen.getByRole('search', { name: /weather-search/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/enter city name/i)).toBeInTheDocument();
   });
 
   it('handles successful weather search', async () => {
-    vi.mocked(WeatherService.getCurrentWeather).mockResolvedValueOnce(mockWeatherData);
+    vi.mocked(weatherService.getCurrentWeather).mockResolvedValueOnce(mockWeatherData);
     
     render(<Layout />);
     
-    const input = screen.getByPlaceholderText(/enter city or location/i);
-    fireEvent.change(input, { target: { value: 'London' } });
-    fireEvent.submit(input);
+    const input = screen.getByPlaceholderText(/enter city name/i);
+    const form = screen.getByRole('search');
+    
+    await userEvent.type(input, 'London');
+    fireEvent.submit(form);
 
     await waitFor(() => {
-      expect(screen.getByText('London, UK')).toBeInTheDocument();
-      expect(screen.getByText('15°C')).toBeInTheDocument();
-      expect(screen.getByText('Partly cloudy')).toBeInTheDocument();
+      expect(weatherService.getCurrentWeather).toHaveBeenCalledWith('London');
+      expect(screen.getByText(/15°/i)).toBeInTheDocument();
+      expect(screen.getByText(/partly cloudy/i)).toBeInTheDocument();
     });
   });
 
   it('handles weather search error', async () => {
     const errorMessage = 'City not found';
-    vi.mocked(WeatherService.getCurrentWeather).mockRejectedValueOnce(new Error(errorMessage));
+    vi.mocked(weatherService.getCurrentWeather).mockRejectedValueOnce(
+      new Error(errorMessage)
+    );
     
     render(<Layout />);
     
-    const input = screen.getByPlaceholderText(/enter city or location/i);
-    fireEvent.change(input, { target: { value: 'NonExistentCity' } });
-    fireEvent.submit(input);
+    const input = screen.getByPlaceholderText(/enter city name/i);
+    const form = screen.getByRole('search');
+    
+    await userEvent.type(input, 'NonExistentCity');
+    fireEvent.submit(form);
 
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      expect(weatherService.getCurrentWeather).toHaveBeenCalledWith('NonExistentCity');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+  });
+
+  it('enables current location search', async () => {
+    vi.mocked(WeatherService.getCurrentLocation).mockResolvedValueOnce({
+      latitude: 51.52,
+      longitude: -0.11
+    });
+    vi.mocked(weatherService.getCurrentWeather).mockResolvedValueOnce(mockWeatherData);
+
+    render(<Layout />);
+    
+    const locationButton = screen.getByRole('button', { name: /use current location/i });
+    await userEvent.click(locationButton);
+
+    await waitFor(() => {
+      expect(WeatherService.getCurrentLocation).toHaveBeenCalled();
+      expect(weatherService.getCurrentWeather).toHaveBeenCalledWith('51.52,-0.11');
     });
   });
 });
