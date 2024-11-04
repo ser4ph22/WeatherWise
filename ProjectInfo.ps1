@@ -98,6 +98,16 @@ function Get-EnvironmentInfo {
     return $info
 }
 
+function Get-GitInfo {
+    $gitInfo = [ordered]@{
+        "Current Branch" = git branch --show-current 2>$null
+        "Remote Origin" = git remote get-url origin 2>$null
+        "Recent Commits" = (git log -n 10 --pretty=format:" - %h - %an, %ar : %s" 2>$null) -join "`n"
+        "Available Branches" = git branch --list 2>$null
+    }
+    return $gitInfo
+}
+
 # Main script execution
 $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 $projectName = Split-Path -Leaf (Get-Location)
@@ -117,14 +127,18 @@ $structure = "PROJECT STRUCTURE`n---------------`n"
 $structure += Get-ProjectStructure | Out-String
 
 # Get Git Information
-$gitInfo = @"
+$gitInfo = Get-GitInfo
+$gitSection = @"
 GIT INFORMATION
 --------------
-Current Branch: $(git branch --show-current 2>$null)
-Remote Origin: $(git remote get-url origin 2>$null)
+Current Branch: $($gitInfo["Current Branch"])
+Remote Origin: $($gitInfo["Remote Origin"])
 
 Recent Commits:
-$(git log -n 5 --pretty=format:" - %h - %an, %ar : %s" 2>$null)
+$($gitInfo["Recent Commits"])
+
+Available Branches:
+$($gitInfo["Available Branches"])
 
 "@
 
@@ -151,7 +165,7 @@ foreach ($item in $environmentInfo.GetEnumerator()) {
 }
 
 # Combine all sections and write to file
-$content = @($header, $structure, $gitInfo, $projectStats, $envInfo) -join "`n"
+$content = @($header, $structure, $gitSection, $projectStats, $envInfo) -join "`n"
 $content | Out-File -FilePath $outputFile -Encoding UTF8
 
 Write-Host "Project documentation has been saved to $outputFile" -ForegroundColor Green
