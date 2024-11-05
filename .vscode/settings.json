@@ -1,3 +1,22 @@
 {
+<<<<<<< HEAD
     "git.ignoreLimitWarning": true
 }
+=======
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"']([^\"']*).*?[\"']"]
+  ],
+  "files.eol": "\n",
+  "editor.tabSize": 2,
+  "editor.rulers": [100],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true
+}
+>>>>>>> develop
