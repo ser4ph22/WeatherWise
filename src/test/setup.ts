@@ -18,3 +18,4 @@ if (typeof window !== 'undefined') {
   // @ts-ignore - this is a valid property but TS doesn't know about it
   window.IS_REACT_ACT_ENVIRONMENT = true;
 }
+

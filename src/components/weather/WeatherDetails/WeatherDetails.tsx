@@ -1,174 +1,126 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Cloud, Droplets, Sun, Thermometer, Wind } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Wind, Droplets, Gauge, Sun, Thermometer, Eye, ChevronDown } from 'lucide-react';
-import type { CurrentWeather } from '@/types/Weather.types';
+import type { WeatherResponse } from '@/types/Weather.types';
 
-export interface WeatherDetailsProps {
-  weather: CurrentWeather;
+interface WeatherDetailsProps {
+  weather: WeatherResponse;
   units?: 'metric' | 'imperial';
   className?: string;
-  expanded?: boolean;
-  onToggleExpand?: () => void;
 }
 
 export const WeatherDetails: React.FC<WeatherDetailsProps> = ({
   weather,
   units = 'metric',
-  className = '',
-  expanded = false,
-  onToggleExpand
+  className = ''
 }) => {
-  const [height, setHeight] = useState<number | undefined>(undefined);
-  const [isInitialRender, setIsInitialRender] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(true); // Default to expanded for better accessibility
 
-  const {
-    wind_kph,
-    wind_mph,
-    wind_dir,
-    humidity,
-    pressure_mb,
-    pressure_in,
-    feelslike_c,
-    feelslike_f,
-    uv,
-    vis_km,
-    vis_miles
-  } = weather;
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
 
-  const detailItems = [
+    const observer = new ResizeObserver(() => {
+      if (containerRef.current) {
+        setExpanded(containerRef.current.scrollHeight > 0);
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const metrics = [
     {
-      icon: <Wind className="w-5 h-5" />,
+      icon: Wind,
       label: 'Wind',
       value: units === 'metric' 
-        ? `${wind_kph} km/h ${wind_dir}`
-        : `${wind_mph} mph ${wind_dir}`,
-      id: 'wind',
-      color: 'text-blue-500'
+        ? `${weather.current.wind_kph} km/h`
+        : `${weather.current.wind_mph} mph`,
+      details: `${weather.current.wind_dir} ${weather.current.wind_degree}°`
     },
     {
-      icon: <Droplets className="w-5 h-5" />,
+      icon: Droplets,
       label: 'Humidity',
-      value: `${humidity}%`,
-      id: 'humidity',
-      color: 'text-cyan-500'
+      value: `${weather.current.humidity}%`,
+      details: `Feels like ${units === 'metric' 
+        ? `${weather.current.feelslike_c}°C`
+        : `${weather.current.feelslike_f}°F`}`
     },
     {
-      icon: <Gauge className="w-5 h-5" />,
-      label: 'Pressure',
-      value: units === 'metric'
-        ? `${pressure_mb} mb`
-        : `${pressure_in} in`,
-      id: 'pressure',
-      color: 'text-purple-500'
+      icon: Cloud,
+      label: 'Cloud Cover',
+      value: `${weather.current.cloud}%`,
+      details: `Visibility ${units === 'metric'
+        ? `${weather.current.vis_km} km`
+        : `${weather.current.vis_miles} mi`}`
     },
     {
-      icon: <Thermometer className="w-5 h-5" />,
-      label: 'Feels Like',
-      value: units === 'metric'
-        ? `${feelslike_c}°C`
-        : `${feelslike_f}°F`,
-      id: 'feels-like',
-      color: 'text-red-500'
-    },
-    {
-      icon: <Sun className="w-5 h-5" />,
+      icon: Sun,
       label: 'UV Index',
-      value: uv.toString(),
-      id: 'uv',
-      color: 'text-yellow-500'
+      value: weather.current.uv.toString(),
+      details: `Pressure ${weather.current.pressure_mb} mb`
     },
     {
-      icon: <Eye className="w-5 h-5" />,
-      label: 'Visibility',
+      icon: Thermometer,
+      label: 'Precipitation',
       value: units === 'metric'
-        ? `${vis_km} km`
-        : `${vis_miles} mi`,
-      id: 'visibility',
-      color: 'text-green-500'
+        ? `${weather.current.precip_mm} mm`
+        : `${weather.current.precip_in} in`,
+      details: `Gust ${units === 'metric'
+        ? `${weather.current.gust_kph} km/h`
+        : `${weather.current.gust_mph} mph`}`
     }
   ];
 
-  useEffect(() => {
-    setIsInitialRender(false);
-  }, []);
+  const getMetricColor = (index: number) => {
+    const colors = [
+      'text-blue-500 dark:text-blue-400',   // Wind
+      'text-sky-500 dark:text-sky-400',     // Humidity
+      'text-gray-500 dark:text-gray-400',   // Cloud Cover
+      'text-yellow-500 dark:text-yellow-400', // UV Index
+      'text-red-500 dark:text-red-400'      // Precipitation
+    ];
+    return colors[index] || colors[0];
+  };
 
   return (
     <Card 
-      className={`overflow-hidden transition-shadow duration-300 ${
-        expanded ? 'shadow-md' : ''
-      } ${className}`}
+      ref={containerRef}
       role="region"
       aria-label="Weather details"
-      aria-expanded={expanded}
+      className={`overflow-hidden transition-all duration-300 ${className} ${
+        expanded ? 'max-h-[800px]' : 'max-h-0'
+      }`}
     >
-      <div 
-        className={`
-          p-4 cursor-pointer hover:bg-gray-50 
-          transition-colors duration-200
-          flex items-center justify-between
-        `}
-        onClick={onToggleExpand}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggleExpand?.();
-          }
-        }}
-        aria-controls="weather-details-content"
-      >
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Gauge className="w-5 h-5" />
-          Detailed Weather Information
-        </h3>
-        <ChevronDown 
-          className={`
-            w-5 h-5 transition-transform duration-300
-            ${expanded ? 'rotate-180' : ''}
-          `}
-          aria-hidden="true"
-        />
-      </div>
-
-      <div 
-        id="weather-details-content"
-        className={`
-          grid grid-cols-2 md:grid-cols-3 gap-4 p-4
-          transition-all duration-300 ease-in-out
-          ${expanded ? 'opacity-100' : 'opacity-0 h-0 p-0'}
-          ${isInitialRender ? 'transform-none' : ''}
-        `}
-        style={{
-          height: expanded ? height : 0,
-          visibility: expanded ? 'visible' : 'hidden'
-        }}
-      >
-        {detailItems.map(({ icon, label, value, id, color }) => (
-          <div 
-            key={id}
-            className={`
-              flex items-center gap-3 p-3
-              bg-white rounded-lg shadow-sm
-              transform transition-all duration-200
-              hover:shadow-md hover:-translate-y-0.5
-            `}
-            role="group"
-            aria-labelledby={`weather-detail-${id}`}
+      <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 md:grid-cols-5">
+        {metrics.map((metric, index) => (
+          <button
+            key={metric.label}
+            type="button"
+            className="flex flex-col items-center justify-center gap-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full text-left"
           >
-            <div className={`${color}`}>
-              {icon}
+            <metric.icon 
+              className={`h-6 w-6 ${getMetricColor(index)}`}
+              aria-hidden="true"
+            />
+            <div className="text-center w-full">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {metric.label}
+              </h3>
+              <p className="mt-1 text-lg font-semibold">
+                {metric.value}
+              </p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {metric.details}
+              </p>
             </div>
-            <div className="flex flex-col">
-              <span 
-                id={`weather-detail-${id}`}
-                className="text-sm text-gray-600"
-              >
-                {label}
-              </span>
-              <span className="font-medium">{value}</span>
-            </div>
-          </div>
+          </button>
         ))}
       </div>
     </Card>
