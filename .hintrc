@@ -8,6 +8,8 @@
       {
         "aria-valid-attr-value": "off"
       }
-    ]
+    ],
+    "typescript-config/consistent-casing": "off",
+    "typescript-config/strict": "off"
   }
 }

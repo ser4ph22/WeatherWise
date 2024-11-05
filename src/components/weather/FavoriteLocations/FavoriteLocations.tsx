@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Loader2 } from 'lucide-react';
-import type { FavoriteLocation, FavoriteLocationsProps } from '@/types/Weather.types';
+import type { FavoriteLocationsProps } from '@/types/Weather.types';
 
 export const FavoriteLocations: React.FC<FavoriteLocationsProps> = ({
   favorites = [],
@@ -13,8 +13,8 @@ export const FavoriteLocations: React.FC<FavoriteLocationsProps> = ({
   const content = () => {
     if (isLoading) {
       return (
-        <div 
-          className="flex justify-center p-4" 
+        <div
+          className="flex justify-center p-4"
           role="status"
           aria-label="Loading favorites"
         >
