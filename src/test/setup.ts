@@ -8,16 +8,22 @@ expect.extend(matchers);
 
 // Add ResizeObserver mock
 class ResizeObserverMock {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() {
+    // Mock implementation
+  }
+  unobserve() {
+    // Mock implementation
+  }
+  disconnect() {
+    // Mock implementation
+  }
 }
 
 // Add to global before any tests run
 if (typeof window !== 'undefined') {
   window.ResizeObserver = ResizeObserverMock;
   // Enable better error messages for act() warnings
-  // @ts-ignore - this is a valid property but TS doesn't know about it
+  // @ts-expect-error React testing environment flag - not in window type definitions
   window.IS_REACT_ACT_ENVIRONMENT = true;
 }
 
