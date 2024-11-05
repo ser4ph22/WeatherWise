@@ -1,98 +1,66 @@
-// src/components/weather/FavoriteLocations/FavoriteLocations.tsx
-
 import React from 'react';
-import { Trash2, Star } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import type { WeatherLocation } from '@/types/Weather.types';
-
-export interface FavoriteLocationsProps {
-  locations: WeatherLocation[];
-  onSelect: (location: WeatherLocation) => void;
-  onRemove: (location: WeatherLocation) => void;
-  isLoading?: boolean;
-  selectedLocation?: WeatherLocation | null;
-  className?: string;
-}
+import { Loader2 } from 'lucide-react';
+import type { FavoriteLocation, FavoriteLocationsProps } from '@/types/Weather.types';
 
 export const FavoriteLocations: React.FC<FavoriteLocationsProps> = ({
-  locations,
+  favorites = [],
   onSelect,
-  onRemove,
-  isLoading = false,
-  selectedLocation,
-  className = '',
+  error,
+  className,
+  isLoading = false
 }) => {
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-4">
-        <LoadingSpinner size="md" />
-      </div>
-    );
-  }
-
-  if (!locations.length) {
-    return (
-      <Card className={`p-4 text-center ${className}`}>
-        <div className="flex items-center justify-center gap-2 text-gray-500">
-          <Star className="w-4 h-4" />
-          <span>No favorite locations yet</span>
+  const content = () => {
+    if (isLoading) {
+      return (
+        <div 
+          className="flex justify-center p-4" 
+          role="status"
+          aria-label="Loading favorites"
+        >
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="sr-only">Loading favorite locations...</span>
         </div>
-      </Card>
+      );
+    }
+
+    if (error) {
+      return (
+        <p className="text-red-500 mb-4" role="alert">{error}</p>
+      );
+    }
+
+    if (favorites.length === 0) {
+      return (
+        <p className="text-gray-500">No favorite locations saved</p>
+      );
+    }
+
+    return (
+      <ul className="space-y-2">
+        {favorites.map((location) => (
+          <li key={`${location.name}-${location.region}`}>
+            <button
+              onClick={() => onSelect(location)}
+              className="w-full text-left px-3 py-2 rounded hover:bg-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label={`Select ${location.name}, ${location.region}`}
+            >
+              <span className="font-medium">{location.name}</span>
+              <span className="text-sm text-gray-500 block">
+                {location.region}, {location.country}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
     );
-  }
+  };
 
   return (
-    <ul
-      className={`grid gap-2 ${className}`}
-      role="listbox"
-      aria-label="Favorite locations"
-    >
-      {locations.map((location) => {
-        const isSelected = selectedLocation?.name === location.name;
-        const locationKey = `${location.name}-${location.lat}-${location.lon}`;
-        
-        return (
-          <li
-            key={locationKey}
-            role="option"
-            aria-selected={isSelected}
-          >
-            <Card
-              className={`
-                p-3 transition-all
-                ${isSelected ? 'ring-2 ring-primary' : ''}
-                hover:shadow-md
-              `}
-            >
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  className="flex-1 text-left justify-start h-auto p-2"
-                  onClick={() => onSelect(location)}
-                >
-                  <div>
-                    <div className="font-medium">{location.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {location.region}, {location.country}
-                    </div>
-                  </div>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-500 hover:text-red-500"
-                  onClick={() => onRemove(location)}
-                  aria-label={`Remove ${location.name} from favorites`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </Card>
-          </li>
-        );
-      })}
-    </ul>
+    <Card className={`p-4 ${className || ''}`}>
+      <h2 className="text-lg font-semibold mb-4">Favorite Locations</h2>
+      {content()}
+    </Card>
   );
 };

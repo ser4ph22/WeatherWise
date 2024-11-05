@@ -1,5 +1,3 @@
-// src/types/Weather.types.ts
-
 // API Response Types
 export interface WeatherLocation {
   name: string;
@@ -141,20 +139,39 @@ export type WeatherErrorResponse = {
   error: WeatherError;
 };
 
+// Favorites Types
+export interface FavoriteLocation {
+  name: string;
+  lat: number;
+  lon: number;
+  region: string;
+  country: string;
+}
+
 // Component Props Types
 export interface WeatherDisplayProps {
   weather: WeatherResponse;
-  units?: 'metric' | 'imperial';
+  units?: TemperatureUnit;
   onUnitToggle?: () => void;
+  onToggleFavorite?: () => void;
+  isFavorite?: boolean;
   isLoading?: boolean;
   className?: string;
 }
 
 export interface WeatherSearchProps {
   onSearch: (location: string) => Promise<void>;
+  onCurrentLocation?: () => Promise<void>;
   isLoading?: boolean;
   error?: string | null;
-  placeholder?: string;
+}
+
+export interface FavoriteLocationsProps {
+  favorites: FavoriteLocation[];
+  onSelect: (location: FavoriteLocation) => void;
+  error?: string | null;
+  className?: string;
+  isLoading?: boolean;
 }
 
 // Form Types
@@ -172,7 +189,7 @@ export interface UseWeatherState {
 
 export interface UseWeatherOptions {
   location?: string;
-  units?: 'metric' | 'imperial';
+  units?: TemperatureUnit;
   days?: number;
   enableForecast?: boolean;
 }
@@ -195,10 +212,11 @@ export interface GeoLocation {
 export const WEATHER_UNITS = {
   METRIC: 'metric' as const,
   IMPERIAL: 'imperial' as const,
-};
+} as const;
 
 export const CACHE_KEYS = {
   CURRENT_WEATHER: 'current_weather',
   FORECAST: 'forecast',
   PREFERENCES: 'weather_preferences',
+  FAVORITES: 'weather_favorites',
 } as const;

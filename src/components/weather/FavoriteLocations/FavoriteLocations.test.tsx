@@ -1,116 +1,74 @@
-// src/components/weather/FavoriteLocations/FavoriteLocations.test.tsx
-
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { FavoriteLocations } from './FavoriteLocations';
-import type { WeatherLocation } from '@/types/Weather.types';
+import type { FavoriteLocation } from '@/types/Weather.types';
 
-const mockLocations: WeatherLocation[] = [
-  {
-    name: 'London',
-    region: 'City of London',
-    country: 'UK',
-    lat: 51.52,
-    lon: -0.11,
-    tz_id: 'Europe/London',
-    localtime_epoch: 1699084800,
-    localtime: '2024-11-04 12:00'
-  },
-  {
-    name: 'Paris',
-    region: 'Ile-de-France',
-    country: 'France',
-    lat: 48.8567,
-    lon: 2.3508,
-    tz_id: 'Europe/Paris',
-    localtime_epoch: 1699084800,
-    localtime: '2024-11-04 13:00'
-  }
+const mockFavorites: FavoriteLocation[] = [
+  { name: 'London', lat: 51.52, lon: -0.11, region: 'City of London', country: 'UK' },
+  { name: 'Paris', lat: 48.85, lon: 2.35, region: 'Ile-de-France', country: 'France' }
 ];
 
 describe('FavoriteLocations', () => {
   it('renders loading spinner when loading', () => {
     render(
       <FavoriteLocations
-        locations={[]}
-        onSelect={() => {}}
-        onRemove={() => {}}
+        favorites={[]}
+        onSelect={vi.fn()}
         isLoading={true}
       />
     );
-
+    
+    // Check for loading state
     expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByLabelText('Loading favorites')).toBeInTheDocument();
+    expect(screen.getByText('Loading favorite locations...')).toBeInTheDocument();
   });
 
   it('displays empty state message when no locations', () => {
     render(
       <FavoriteLocations
-        locations={[]}
-        onSelect={() => {}}
-        onRemove={() => {}}
+        favorites={[]}
+        onSelect={vi.fn()}
       />
     );
-
-    expect(screen.getByText('No favorite locations yet')).toBeInTheDocument();
+    expect(screen.getByText('No favorite locations saved')).toBeInTheDocument();
   });
 
   it('renders list of locations', () => {
     render(
       <FavoriteLocations
-        locations={mockLocations}
-        onSelect={() => {}}
-        onRemove={() => {}}
+        favorites={mockFavorites}
+        onSelect={vi.fn()}
       />
     );
-
-    const listbox = screen.getByRole('listbox');
-    expect(listbox).toBeInTheDocument();
-    expect(screen.getAllByRole('option')).toHaveLength(2);
+    
     expect(screen.getByText('London')).toBeInTheDocument();
     expect(screen.getByText('Paris')).toBeInTheDocument();
   });
 
   it('calls onSelect when location is clicked', () => {
-    const onSelect = vi.fn();
+    const handleSelect = vi.fn();
     render(
       <FavoriteLocations
-        locations={mockLocations}
-        onSelect={onSelect}
-        onRemove={() => {}}
+        favorites={mockFavorites}
+        onSelect={handleSelect}
       />
     );
-
-    fireEvent.click(screen.getByText('London'));
-    expect(onSelect).toHaveBeenCalledWith(mockLocations[0]);
+    
+    fireEvent.click(screen.getByRole('button', { name: /Select London/i }));
+    expect(handleSelect).toHaveBeenCalledWith(mockFavorites[0]);
   });
 
-  it('calls onRemove when remove button is clicked', () => {
-    const onRemove = vi.fn();
+  it('shows error message when provided', () => {
+    const errorMessage = 'Failed to load favorites';
     render(
       <FavoriteLocations
-        locations={mockLocations}
-        onSelect={() => {}}
-        onRemove={onRemove}
+        favorites={[]}
+        onSelect={vi.fn()}
+        error={errorMessage}
       />
     );
 
-    const removeButtons = screen.getAllByLabelText(/Remove .* from favorites/);
-    fireEvent.click(removeButtons[0]);
-    expect(onRemove).toHaveBeenCalledWith(mockLocations[0]);
-  });
-
-  it('highlights selected location', () => {
-    render(
-      <FavoriteLocations
-        locations={mockLocations}
-        onSelect={() => {}}
-        onRemove={() => {}}
-        selectedLocation={mockLocations[0]}
-      />
-    );
-
-    const options = screen.getAllByRole('option');
-    expect(options[0]).toHaveAttribute('aria-selected', 'true');
-    expect(options[1]).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('alert')).toHaveTextContent(errorMessage);
   });
 });

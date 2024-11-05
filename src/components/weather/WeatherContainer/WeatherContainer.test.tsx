@@ -2,11 +2,16 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WeatherContainer } from './WeatherContainer';
 import { useWeather } from '@/hooks/useWeather';
+import { useFavorites } from '@/hooks/useFavorites';
 import type { WeatherResponse, ForecastResponse } from '@/types/Weather.types';
 
-// Mock the useWeather hook
+// Mock the hooks
 vi.mock('@/hooks/useWeather', () => ({
   useWeather: vi.fn()
+}));
+
+vi.mock('@/hooks/useFavorites', () => ({
+  useFavorites: vi.fn()
 }));
 
 // Mock the WeatherDisplay component
@@ -15,6 +20,12 @@ vi.mock('../WeatherDisplay', () => ({
     <div data-testid="weather-display">
       <div>Mock WeatherDisplay</div>
       <button onClick={props.onUnitToggle}>Toggle Units</button>
+      <button 
+        onClick={props.onToggleFavorite}
+        aria-label={props.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        {props.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      </button>
       {props.isLoading && <div data-testid="weather-loading">Loading...</div>}
     </div>
   ))
@@ -56,9 +67,6 @@ vi.mock('../WeatherDetails', () => ({
     </div>
   ))
 }));
-
-
-
 
 const mockWeatherData: WeatherResponse = {
   location: {
@@ -155,6 +163,28 @@ const mockForecastData: ForecastResponse = {
 describe('WeatherContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Default useWeather mock return value
+    vi.mocked(useWeather).mockReturnValue({
+      current: null,
+      forecast: null,
+      isLoading: false,
+      error: null,
+      units: 'metric',
+      toggleUnits: vi.fn(),
+      getCurrentLocation: vi.fn(),
+      fetchWeather: vi.fn(),
+      clearWeather: vi.fn()
+    });
+
+    // Default useFavorites mock return value - removed clearFavorites
+    vi.mocked(useFavorites).mockReturnValue({
+      favorites: [],
+      addFavorite: vi.fn(),
+      removeFavorite: vi.fn(),
+      isFavorite: vi.fn().mockReturnValue(false),
+      error: null
+    });
   });
 
   it('renders error state correctly', () => {
@@ -358,6 +388,120 @@ describe('WeatherContainer', () => {
     });
 
     render(<WeatherContainer />);
+    expect(screen.getByRole('alert')).toHaveTextContent(errorMessage);
+  });
+
+  it('renders favorites list', () => {
+    const mockFavorites = [
+      { name: 'London', lat: 51.52, lon: -0.11, region: 'City of London', country: 'UK' },
+      { name: 'Paris', lat: 48.85, lon: 2.35, region: 'Ile-de-France', country: 'France' }
+    ];
+
+    vi.mocked(useFavorites).mockReturnValue({
+      favorites: mockFavorites,
+      addFavorite: vi.fn(),
+      removeFavorite: vi.fn(),
+      isFavorite: vi.fn(),
+      error: null
+    });
+
+    render(<WeatherContainer />);
+    
+    // Use getAllByText since we have both mobile and desktop versions
+    expect(screen.getAllByText('London')).toHaveLength(2);
+    expect(screen.getAllByText('Paris')).toHaveLength(2);
+  });
+
+  it('handles favorite selection', () => {
+    const mockFavorites = [
+      { name: 'London', lat: 51.52, lon: -0.11, region: 'City of London', country: 'UK' }
+    ];
+  
+    // Mock useWeather with weather data
+    vi.mocked(useWeather).mockReturnValue({
+      current: mockWeatherData,
+      forecast: null,
+      isLoading: false,
+      error: null,
+      units: 'metric',
+      toggleUnits: vi.fn(),
+      getCurrentLocation: vi.fn(),
+      fetchWeather: vi.fn(),
+      clearWeather: vi.fn()
+    });
+  
+    // Mock useFavorites
+    vi.mocked(useFavorites).mockReturnValue({
+      favorites: mockFavorites,
+      addFavorite: vi.fn(),
+      removeFavorite: vi.fn(),
+      isFavorite: vi.fn(),
+      error: null
+    });
+  
+    render(<WeatherContainer />);
+    
+    // Get the first location button
+    const favoriteButton = screen.getAllByRole('button', { 
+      name: /Select London, City of London/i 
+    })[0];
+    
+    fireEvent.click(favoriteButton);
+    
+    // Just check for weather-display since we're not returning forecast data
+    expect(screen.getByTestId('weather-display')).toBeInTheDocument();
+  });
+
+  it('handles adding location to favorites', () => {
+    const addFavorite = vi.fn();
+    const isFavorite = vi.fn().mockReturnValue(false);
+
+    vi.mocked(useFavorites).mockReturnValue({
+      favorites: [],
+      addFavorite,
+      removeFavorite: vi.fn(),
+      isFavorite,
+      error: null
+    });
+
+    vi.mocked(useWeather).mockReturnValue({
+      current: mockWeatherData,
+      forecast: null,
+      isLoading: false,
+      error: null,
+      units: 'metric',
+      toggleUnits: vi.fn(),
+      getCurrentLocation: vi.fn(),
+      fetchWeather: vi.fn(),
+      clearWeather: vi.fn()
+    });
+
+    render(<WeatherContainer />);
+    
+    const favoriteButton = screen.getByLabelText('Add to favorites');
+    fireEvent.click(favoriteButton);
+    
+    expect(addFavorite).toHaveBeenCalledWith({
+      name: 'London',
+      lat: 51.52,
+      lon: -0.11,
+      region: 'City of London',
+      country: 'UK'
+    });
+  });
+
+  it('handles favorites error state', () => {
+    const errorMessage = 'Failed to load favorites';
+    vi.mocked(useFavorites).mockReturnValue({
+      favorites: [],
+      addFavorite: vi.fn(),
+      removeFavorite: vi.fn(),
+      isFavorite: vi.fn(),
+      error: errorMessage
+    });
+
+    render(<WeatherContainer />);
+    
     expect(screen.getByRole('alert')).toHaveTextContent(errorMessage);
   });
 });
