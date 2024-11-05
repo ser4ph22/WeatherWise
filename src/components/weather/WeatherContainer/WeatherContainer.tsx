@@ -1,9 +1,7 @@
-// src/components/weather/WeatherContainer/WeatherContainer.tsx
 import React, { useState, useCallback } from 'react';
 import { useWeather } from '@/hooks/useWeather';
 import { WeatherDisplay } from '@/components/weather/WeatherDisplay';
 import { ForecastDisplay } from '@/components/weather/ForecastDisplay';
-import { WeatherDetails } from '@/components/weather/WeatherDetails';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
@@ -17,7 +15,6 @@ export const WeatherContainer: React.FC<WeatherContainerProps> = ({
   className
 }) => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [detailsExpanded, setDetailsExpanded] = useState(false);
   
   const {
     current,
@@ -34,10 +31,6 @@ export const WeatherContainer: React.FC<WeatherContainerProps> = ({
 
   const handleDaySelect = useCallback((date: string) => {
     setSelectedDate(prevDate => prevDate === date ? null : date);
-  }, []);
-
-  const handleToggleDetails = useCallback(() => {
-    setDetailsExpanded(prev => !prev);
   }, []);
 
   if (error) {
@@ -84,15 +77,6 @@ export const WeatherContainer: React.FC<WeatherContainerProps> = ({
             onUnitToggle={toggleUnits}
             isLoading={isLoading}
           />
-          {!isLoading && (
-            <WeatherDetails
-              weather={current.current}
-              units={units}
-              expanded={detailsExpanded}
-              onToggleExpand={handleToggleDetails}
-              className="mt-4"
-            />
-          )}
         </Card>
       )}
 

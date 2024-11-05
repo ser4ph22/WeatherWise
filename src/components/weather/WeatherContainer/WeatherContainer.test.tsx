@@ -58,6 +58,8 @@ vi.mock('../WeatherDetails', () => ({
 }));
 
 
+
+
 const mockWeatherData: WeatherResponse = {
   location: {
     name: 'London',
@@ -153,69 +155,6 @@ const mockForecastData: ForecastResponse = {
 describe('WeatherContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('renders WeatherDetails when weather data is available', () => {
-    vi.mocked(useWeather).mockReturnValue({
-      current: mockWeatherData,
-      forecast: null,
-      isLoading: false,
-      error: null,
-      units: 'metric',
-      toggleUnits: vi.fn(),
-      getCurrentLocation: vi.fn(),
-      fetchWeather: vi.fn(),
-      clearWeather: vi.fn()
-    });
-  
-    render(<WeatherContainer />);
-    expect(screen.getByTestId('weather-details')).toBeInTheDocument();
-  });
-  
-  it('toggles WeatherDetails expansion state', () => {
-    vi.mocked(useWeather).mockReturnValue({
-      current: mockWeatherData,
-      forecast: null,
-      isLoading: false,
-      error: null,
-      units: 'metric',
-      toggleUnits: vi.fn(),
-      getCurrentLocation: vi.fn(),
-      fetchWeather: vi.fn(),
-      clearWeather: vi.fn()
-    });
-  
-    render(<WeatherContainer />);
-    
-    const toggleButton = screen.getByRole('button', { name: 'Toggle Details' });
-    
-    // Initially not expanded
-    expect(screen.queryByTestId('expanded-details')).not.toBeInTheDocument();
-    
-    // Click to expand
-    fireEvent.click(toggleButton);
-    expect(screen.getByTestId('expanded-details')).toBeInTheDocument();
-    
-    // Click to collapse
-    fireEvent.click(toggleButton);
-    expect(screen.queryByTestId('expanded-details')).not.toBeInTheDocument();
-  });
-  
-  it('does not render WeatherDetails when loading', () => {
-    vi.mocked(useWeather).mockReturnValue({
-      current: mockWeatherData,
-      forecast: null,
-      isLoading: true,
-      error: null,
-      units: 'metric',
-      toggleUnits: vi.fn(),
-      getCurrentLocation: vi.fn(),
-      fetchWeather: vi.fn(),
-      clearWeather: vi.fn()
-    });
-  
-    render(<WeatherContainer />);
-    expect(screen.queryByTestId('weather-details')).not.toBeInTheDocument();
   });
 
   it('renders error state correctly', () => {
