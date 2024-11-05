@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useWeather } from '@/hooks/useWeather';
 import { WeatherDisplay } from '@/components/weather/WeatherDisplay';
+import { ForecastDisplay } from '@/components/weather/ForecastDisplay';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
@@ -13,8 +14,11 @@ export const WeatherContainer: React.FC<WeatherContainerProps> = ({
   location,
   className
 }) => {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  
   const {
     current,
+    forecast,
     isLoading,
     error,
     units,
@@ -25,10 +29,14 @@ export const WeatherContainer: React.FC<WeatherContainerProps> = ({
     enableForecast: true
   });
 
+  const handleDaySelect = useCallback((date: string) => {
+    setSelectedDate(prevDate => prevDate === date ? null : date);
+  }, []);
+
   if (error) {
     return (
       <Card className="p-6 text-center bg-red-50">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600" role="alert">{error}</p>
         <Button 
           onClick={getCurrentLocation}
           className="mt-4"
@@ -39,7 +47,7 @@ export const WeatherContainer: React.FC<WeatherContainerProps> = ({
     );
   }
 
-  if (!current) {
+  if (!current && !isLoading) {
     return (
       <Card className="p-6 text-center">
         <p className="text-gray-500">
@@ -56,13 +64,33 @@ export const WeatherContainer: React.FC<WeatherContainerProps> = ({
   }
 
   return (
-    <div className={className}>
-      <WeatherDisplay
-        weather={current}
-        units={units}
-        onUnitToggle={toggleUnits}
-        isLoading={isLoading}
-      />
+    <div 
+      className={`space-y-4 ${className}`} 
+      role="region" 
+      aria-label="Weather information"
+    >
+      {current && (
+        <Card className="p-6">
+          <WeatherDisplay
+            weather={current}
+            units={units}
+            onUnitToggle={toggleUnits}
+            isLoading={isLoading}
+          />
+        </Card>
+      )}
+
+      {(forecast || isLoading) && (
+        <Card className="p-6">
+          <ForecastDisplay
+            forecast={forecast!}
+            units={units}
+            isLoading={isLoading}
+            onDaySelect={handleDaySelect}
+            selectedDate={selectedDate}
+          />
+        </Card>
+      )}
     </div>
   );
 };

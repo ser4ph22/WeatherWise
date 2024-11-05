@@ -9,13 +9,11 @@ describe('ForecastDisplay', () => {
   const expectedDayName = mockDate.toLocaleDateString('en-US', { weekday: 'long' });
   
   beforeAll(() => {
-    // Mock Date to always return our test date
     vi.useFakeTimers();
     vi.setSystemTime(mockDate);
   });
 
   afterAll(() => {
-    // Cleanup
     vi.useRealTimers();
   });
 
@@ -117,6 +115,12 @@ describe('ForecastDisplay', () => {
 
   it('renders forecast data correctly', () => {
     render(<ForecastDisplay forecast={mockForecast} />);
+    const list = screen.getByRole('list', { name: /weather forecast days/i });
+    expect(list).toBeInTheDocument();
+    
+    const listItems = screen.getAllByRole('listitem');
+    expect(listItems).toHaveLength(mockForecast.forecast.forecastday.length);
+    
     expect(screen.getByText(expectedDayName)).toBeInTheDocument();
     expect(screen.getByText('Partly cloudy')).toBeInTheDocument();
     expect(screen.getByText('20%')).toBeInTheDocument();
@@ -134,7 +138,8 @@ describe('ForecastDisplay', () => {
     const onDaySelect = vi.fn();
     render(<ForecastDisplay forecast={mockForecast} onDaySelect={onDaySelect} />);
     
-    fireEvent.click(screen.getByRole('button'));
+    const dayElement = screen.getByRole('listitem');
+    fireEvent.click(dayElement.firstChild as Element);
     expect(onDaySelect).toHaveBeenCalledWith('2024-11-04');
   });
 
@@ -142,12 +147,79 @@ describe('ForecastDisplay', () => {
     const onDaySelect = vi.fn();
     render(<ForecastDisplay forecast={mockForecast} onDaySelect={onDaySelect} />);
     
-    const dayElement = screen.getByRole('button');
+    const dayElement = screen.getByRole('listitem').firstChild as Element;
+    
     fireEvent.keyDown(dayElement, { key: 'Enter' });
     expect(onDaySelect).toHaveBeenCalledWith('2024-11-04');
 
-    // Test space key as well
     fireEvent.keyDown(dayElement, { key: ' ' });
     expect(onDaySelect).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows selected state correctly', () => {
+    const { rerender } = render(
+      <ForecastDisplay 
+        forecast={mockForecast} 
+        selectedDate="2024-11-04"
+      />
+    );
+
+    const dayElement = screen.getByRole('listitem').firstChild as Element;
+    expect(dayElement).toHaveAttribute('aria-selected', 'true');
+    expect(dayElement).toHaveClass('ring-2', 'ring-primary');
+
+    rerender(
+      <ForecastDisplay 
+        forecast={mockForecast} 
+        selectedDate="2024-11-05"
+      />
+    );
+
+    expect(dayElement).toHaveAttribute('aria-selected', 'false');
+    expect(dayElement).not.toHaveClass('ring-2', 'ring-primary');
+  });
+
+  it('handles keyboard events correctly', () => {
+    const onDaySelect = vi.fn();
+    render(<ForecastDisplay 
+      forecast={mockForecast} 
+      onDaySelect={onDaySelect}
+    />);
+    
+    const dayElement = screen.getByRole('listitem').firstChild as Element;
+
+    // Enter key
+    fireEvent.keyDown(dayElement, { key: 'Enter' });
+    expect(onDaySelect).toHaveBeenCalledWith('2024-11-04');
+
+    // Space key
+    fireEvent.keyDown(dayElement, { key: ' ' });
+    expect(onDaySelect).toHaveBeenCalledWith('2024-11-04');
+
+    // Other keys should not trigger selection
+    fireEvent.keyDown(dayElement, { key: 'a' });
+    expect(onDaySelect).toHaveBeenCalledTimes(2);
+  });
+
+  it('maintains accessibility attributes', () => {
+    render(<ForecastDisplay forecast={mockForecast} />);
+    
+    const list = screen.getByRole('list');
+    expect(list).toHaveAttribute('aria-label', 'Weather forecast days');
+
+    const dayElement = screen.getByRole('listitem').firstChild as Element;
+    expect(dayElement).toHaveAttribute('id', 'forecast-day-2024-11-04');
+    expect(dayElement).toHaveAttribute('aria-selected');
+    expect(dayElement).toHaveAttribute('tabIndex', '0');
+  });
+
+  it('handles empty forecast data gracefully', () => {
+    const emptyForecast = {
+      ...mockForecast,
+      forecast: { forecastday: [] }
+    };
+    
+    render(<ForecastDisplay forecast={emptyForecast} />);
+    expect(screen.queryByRole('list')).toBeNull();
   });
 });
