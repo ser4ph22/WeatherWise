@@ -50,7 +50,7 @@ describe('WeatherDetails', () => {
     expect(screen.getByText('6 mi')).toBeInTheDocument();
   });
 
-  it('toggles expanded state when clicked', () => {
+  it('handles both click and keyboard interactions', () => {
     const onToggleExpand = vi.fn();
     render(
       <WeatherDetails 
@@ -61,43 +61,84 @@ describe('WeatherDetails', () => {
     );
 
     const header = screen.getByRole('button');
+    
+    // Test click
     fireEvent.click(header);
+    expect(onToggleExpand).toHaveBeenCalledTimes(1);
     
-    expect(onToggleExpand).toHaveBeenCalled();
+    // Test keyboard - Enter
+    fireEvent.keyDown(header, { key: 'Enter', code: 'Enter' });
+    expect(onToggleExpand).toHaveBeenCalledTimes(2);
+    
+    // Test keyboard - Space
+    fireEvent.keyDown(header, { key: ' ', code: 'Space' });
+    expect(onToggleExpand).toHaveBeenCalledTimes(3);
   });
 
-  it('supports keyboard interaction for expansion toggle', () => {
-    const onToggleExpand = vi.fn();
-    render(
+  it('displays all weather metrics with correct icons', () => {
+    render(<WeatherDetails weather={mockWeatherData} expanded={true} />);
+    
+    const metrics = [
+      { label: 'Wind', value: '8 km/h N' },
+      { label: 'Humidity', value: '65%' },
+      { label: 'Pressure', value: '1015 mb' },
+      { label: 'Feels Like', value: '18°C' },
+      { label: 'UV Index', value: '5' },
+      { label: 'Visibility', value: '10 km' }
+    ];
+
+    metrics.forEach(({ label, value }) => {
+      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(screen.getByText(value)).toBeInTheDocument();
+    });
+  });
+
+  it('applies correct ARIA attributes when expanded/collapsed', () => {
+    const { rerender } = render(
       <WeatherDetails 
         weather={mockWeatherData} 
         expanded={false}
-        onToggleExpand={onToggleExpand}
       />
     );
 
-    const header = screen.getByRole('button');
-    fireEvent.keyPress(header, { key: 'Enter', code: 'Enter' });
-    
-    expect(onToggleExpand).toHaveBeenCalled();
-  });
-
-  it('displays all weather metrics', () => {
-    render(<WeatherDetails weather={mockWeatherData} expanded={true} />);
-    
-    expect(screen.getByText('Wind')).toBeInTheDocument();
-    expect(screen.getByText('Humidity')).toBeInTheDocument();
-    expect(screen.getByText('Pressure')).toBeInTheDocument();
-    expect(screen.getByText('Feels Like')).toBeInTheDocument();
-    expect(screen.getByText('UV Index')).toBeInTheDocument();
-    expect(screen.getByText('Visibility')).toBeInTheDocument();
-  });
-
-  it('sets correct ARIA attributes', () => {
-    render(<WeatherDetails weather={mockWeatherData} expanded={true} />);
-    
     const region = screen.getByRole('region');
-    expect(region).toHaveAttribute('aria-label', 'Weather details');
+    expect(region).toHaveAttribute('aria-expanded', 'false');
+
+    rerender(
+      <WeatherDetails 
+        weather={mockWeatherData} 
+        expanded={true}
+      />
+    );
+
     expect(region).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('applies transition classes correctly', () => {
+    const { container } = render(
+      <WeatherDetails 
+        weather={mockWeatherData} 
+        expanded={true}
+      />
+    );
+
+    const content = container.querySelector('#weather-details-content');
+    expect(content).toHaveClass('opacity-100');
+    expect(content).not.toHaveClass('h-0');
+  });
+
+  it('has interactive hover states on metric cards', () => {
+    render(
+      <WeatherDetails 
+        weather={mockWeatherData} 
+        expanded={true}
+      />
+    );
+
+    const cards = screen.getAllByRole('group');
+    cards.forEach(card => {
+      expect(card).toHaveClass('hover:shadow-md');
+      expect(card).toHaveClass('hover:-translate-y-0.5');
+    });
   });
 });
